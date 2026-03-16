@@ -390,39 +390,112 @@
 
     .custom-cat-list {
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
       gap: 8px;
     }
 
     .custom-cat-chip {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 4px 6px 4px 10px;
-      color: var(--text-secondary);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+
+    .custom-cat-chip:hover { border-color: var(--border-strong); }
+
+    .custom-cat-chip-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
     }
 
     .custom-cat-swatch {
-      width: 10px; height: 10px;
+      width: 12px; height: 12px;
       border-radius: 50%;
       flex-shrink: 0;
     }
+
+    .custom-cat-name {
+      font-size: 13px;
+      color: var(--text-primary);
+      font-weight: 500;
+      flex: 1;
+    }
+
+    .custom-cat-count {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    .custom-cat-chevron {
+      font-size: 10px;
+      color: var(--text-tertiary);
+      transition: transform 0.2s;
+      margin-left: 4px;
+    }
+
+    .custom-cat-chip.expanded .custom-cat-chevron { transform: rotate(180deg); }
 
     .custom-cat-remove {
       background: transparent;
       border: none;
       cursor: pointer;
       color: var(--text-tertiary);
-      font-size: 14px;
+      font-size: 15px;
       line-height: 1;
       padding: 0 2px;
       transition: color 0.15s;
     }
     .custom-cat-remove:hover { color: #B91C1C; }
+
+    .custom-cat-words {
+      display: none;
+      padding: 0 14px 12px;
+      border-top: 1px solid var(--border);
+      margin-top: 0;
+    }
+
+    .custom-cat-chip.expanded .custom-cat-words { display: block; }
+
+    .custom-cat-words-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-top: 12px;
+    }
+
+    .custom-cat-word-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      font-size: 12px;
+    }
+
+    .custom-cat-word-pill-swatch {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+
+    .custom-cat-word-pill-label {
+      padding-right: 10px;
+      color: var(--text-secondary);
+    }
+
+    .custom-cat-empty {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      padding-top: 10px;
+      font-style: italic;
+    }
 
     /* Responsive */
     @media (max-width: 560px) {
@@ -479,6 +552,19 @@
 
 <script>
   const colorMap = [
+    // Basic color words first - these must match before anything else
+    { keys:["black","noir","pitch","ebony","onyx","charcoal","jet","obsidian","sable","raven"], hues:["#0f172a","#1e293b","#111827","#18181b","#09090b"], label:"black & darkness", tagBg:"#e2e8f0", tagText:"#0f172a" },
+    { keys:["white","ivory","pearl","alabaster","snow","chalk","cream","pristine","linen","porcelain"], hues:["#e2e8f0","#f1f5f9","#f8fafc","#cbd5e1","#94a3b8"], label:"white & light", tagBg:"#f8fafc", tagText:"#334155" },
+    { keys:["red","crimson","scarlet","ruby","carmine","vermillion","burgundy","maroon","magenta","cherry"], hues:["#ef4444","#dc2626","#b91c1c","#e11d48","#be123c"], label:"red", tagBg:"#fee2e2", tagText:"#991b1b" },
+    { keys:["blue","navy","cobalt","sapphire","azure","cerulean","indigo","ultramarine","lapis","periwinkle"], hues:["#3b82f6","#2563eb","#1d4ed8","#1e40af","#1e3a8a"], label:"blue", tagBg:"#dbeafe", tagText:"#1e3a8a" },
+    { keys:["green","emerald","jade","olive","mint","sage","viridian","chartreuse","lime","pistachio"], hues:["#22c55e","#16a34a","#15803d","#166534","#14532d"], label:"green", tagBg:"#dcfce7", tagText:"#166534" },
+    { keys:["yellow","gold","lemon","canary","saffron","mustard","amber","maize","ochre","flaxen"], hues:["#eab308","#ca8a04","#a16207","#facc15","#fbbf24"], label:"yellow & gold", tagBg:"#fef9c3", tagText:"#854d0e" },
+    { keys:["orange","tangerine","apricot","peach","coral","rust","terracotta","burnt","sienna","persimmon"], hues:["#f97316","#ea580c","#c2410c","#fb923c","#fdba74"], label:"orange", tagBg:"#ffedd5", tagText:"#9a3412" },
+    { keys:["purple","violet","lavender","mauve","plum","lilac","heliotrope","amethyst","grape","wisteria"], hues:["#a855f7","#9333ea","#7e22ce","#6b21a8","#581c87"], label:"purple & violet", tagBg:"#f3e8ff", tagText:"#6b21a8" },
+    { keys:["pink","rose","blush","magenta","fuchsia","salmon","flamingo","bubblegum","carnation","hot"], hues:["#ec4899","#db2777","#be185d","#f472b6","#f9a8d4"], label:"pink & rose", tagBg:"#fce7f3", tagText:"#831843" },
+    { keys:["brown","chocolate","caramel","coffee","mocha","mahogany","sepia","chestnut","tawny","umber"], hues:["#92400e","#78350f","#451a03","#a16207","#b45309"], label:"brown & earth", tagBg:"#fef3c7", tagText:"#78350F" },
+    { keys:["gray","grey","silver","ash","slate","charcoal","pewter","graphite","smoke","steel"], hues:["#6b7280","#4b5563","#374151","#9ca3af","#d1d5db"], label:"gray & silver", tagBg:"#f3f4f6", tagText:"#374151" },
+    { keys:["teal","cyan","turquoise","aquamarine","seafoam","aqua","peacock","verdigris","beryl"], hues:["#14b8a6","#0d9488","#0f766e","#06b6d4","#0891b2"], label:"teal & cyan", tagBg:"#ccfbf1", tagText:"#134e4a" },
     { keys:["love","passion","romance","desire","heart","kiss","lust","intimate","valentine","crush","adore","beloved","darling","flame","ardor","amour","devotion","affection","infatuation"], hues:["#C0392B","#E74C3C","#C0143C","#E8274B","#B03060"], label:"passion & desire", tagBg:"#FAD7D7", tagText:"#7F1D1D" },
     { keys:["family","togetherness","home","warmth","mother","father","parent","sibling","bond","reunion","kin","hearth","belonging","childhood","nurture","roots","ancestry","heritage","community"], hues:["#E07B54","#D4642F","#C75B3A","#E8865C","#C0632A"], label:"warmth & belonging", tagBg:"#FDECD3", tagText:"#7A3A0A" },
     { keys:["luxury","premium","royal","elite","noble","opulent","prestige","lavish","exclusive","velvet","indulgent","regal","grandeur","exquisite","sumptuous","extravagant","decadent"], hues:["#6B3FA0","#7B52AB","#4B2E83","#5C3592","#7D3C98"], label:"royalty & luxury", tagBg:"#EDE9FB", tagText:"#3C2070" },
@@ -585,14 +671,38 @@
     return `#${f(0)}${f(8)}${f(4)}`;
   }
 
-  function pickHue(entry) {
-    return entry.hues[Math.floor(Math.random() * entry.hues.length)];
+  function pickHue(entry, word) {
+    // Use word + timestamp to get variation even for the same word
+    const seed = (word || '').split('').reduce((a, c) => a + c.charCodeAt(0), Date.now() % 1000);
+    return entry.hues[seed % entry.hues.length];
   }
 
+  // 12 distinct hue zones anchored to Tailwind palette - guaranteed visual spread
+  const fallbackZones = [
+    { range:[0,30],   hues:["#ef4444","#dc2626","#b91c1c","#f87171"], tagBg:"#fee2e2", tagText:"#991b1b" },  // red
+    { range:[31,60],  hues:["#f97316","#ea580c","#c2410c","#fb923c"], tagBg:"#ffedd5", tagText:"#9a3412" },  // orange
+    { range:[61,90],  hues:["#eab308","#ca8a04","#a16207","#facc15"], tagBg:"#fef9c3", tagText:"#854d0e" },  // yellow
+    { range:[91,120], hues:["#84cc16","#65a30d","#4d7c0f","#a3e635"], tagBg:"#f7fee7", tagText:"#365314" },  // lime
+    { range:[121,150],hues:["#22c55e","#16a34a","#15803d","#4ade80"], tagBg:"#dcfce7", tagText:"#166534" },  // green
+    { range:[151,180],hues:["#14b8a6","#0d9488","#0f766e","#2dd4bf"], tagBg:"#ccfbf1", tagText:"#134e4a" },  // teal
+    { range:[181,210],hues:["#06b6d4","#0891b2","#0e7490","#22d3ee"], tagBg:"#cffafe", tagText:"#164e63" },  // cyan
+    { range:[211,240],hues:["#3b82f6","#2563eb","#1d4ed8","#60a5fa"], tagBg:"#dbeafe", tagText:"#1e3a8a" },  // blue
+    { range:[241,270],hues:["#6366f1","#4f46e5","#4338ca","#818cf8"], tagBg:"#e0e7ff", tagText:"#312e81" },  // indigo
+    { range:[271,300],hues:["#8b5cf6","#7c3aed","#6d28d9","#a78bfa"], tagBg:"#ede9fe", tagText:"#4c1d95" },  // violet
+    { range:[301,330],hues:["#d946ef","#c026d3","#a21caf","#e879f9"], tagBg:"#fae8ff", tagText:"#701a75" },  // fuchsia
+    { range:[331,360],hues:["#ec4899","#db2777","#be185d","#f472b6"], tagBg:"#fce7f3", tagText:"#831843" },  // pink
+  ];
+
   function fallbackColor(word) {
-    let h = 0;
-    for (let i = 0; i < word.length; i++) h = (h * 37 + word.charCodeAt(i)) >>> 0;
-    return { hex: hslToHex(h % 360, 42 + h % 22, 38 + h % 18), label: 'unique word color', tagBg: '#EBEBEB', tagText: '#555' };
+    // Generate a stable number from the word
+    let h = 5381;
+    for (let i = 0; i < word.length; i++) h = ((h << 5) + h) + word.charCodeAt(i);
+    h = Math.abs(h);
+    // Map to one of 12 distinct zones - guarantees color variety across words
+    const zoneIndex = h % 12;
+    const zone = fallbackZones[zoneIndex];
+    const hue = zone.hues[h % zone.hues.length];
+    return { hex: hue, label: 'unique word color', tagBg: zone.tagBg, tagText: zone.tagText };
   }
 
   let customCategories = [];
@@ -615,18 +725,27 @@
 
   function getBestMatch(word) {
     const w = word.toLowerCase().trim();
+    // 1. custom categories take priority
     const custom = getCustomMatch(w);
     if (custom) return custom;
+    // 2. exact key match
     for (const e of colorMap) if (e.keys.includes(w)) return e;
-    for (const e of colorMap) for (const k of e.keys) if (w.includes(k) || k.includes(w)) return e;
+    // 3. word starts with a key or key starts with the word (prefix only, min 4 chars)
+    if (w.length >= 4) {
+      for (const e of colorMap) {
+        for (const k of e.keys) {
+          if (k.length >= 4 && (w.startsWith(k) || k.startsWith(w))) return e;
+        }
+      }
+    }
     return null;
   }
 
   function suggestColorForCategory(name) {
     const match = getBestMatch(name);
-    if (match) { const hex = pickHue(match); return { hex, tagBg: match.tagBg, tagText: match.tagText }; }
+    if (match) { const hex = pickHue(match, name); return { hex, tagBg: match.tagBg, tagText: match.tagText }; }
     const fb = fallbackColor(name);
-    return { hex: fb.hex, tagBg: '#EBEBEB', tagText: '#555' };
+    return { hex: fb.hex, tagBg: fb.tagBg, tagText: fb.tagText };
   }
 
   function renderCustomCats() {
@@ -634,14 +753,33 @@
     const list = document.getElementById('customCatList');
     if (!customCategories.length) { section.style.display = 'none'; return; }
     section.style.display = 'block';
-    list.innerHTML = customCategories.map((cat, i) => `
-      <div class="custom-cat-chip">
-        <span class="custom-cat-swatch" style="background:${cat.hues[0]};"></span>
-        <span>${cat.label}</span>
-        <span style="color:var(--text-tertiary);font-size:11px;">(${cat.words.length} word${cat.words.length !== 1 ? 's' : ''})</span>
-        <button class="custom-cat-remove" onclick="removeCustomCat(${i})" title="Remove">×</button>
-      </div>
-    `).join('');
+    list.innerHTML = customCategories.map((cat, i) => {
+      const wordPills = cat.words.length
+        ? cat.words.map(w => `
+            <div class="custom-cat-word-pill">
+              <div class="custom-cat-word-pill-swatch" style="background:${cat.hues[0]};"></div>
+              <span class="custom-cat-word-pill-label">${w}</span>
+            </div>`).join('')
+        : `<p class="custom-cat-empty">no words assigned yet - define a word above to add it here</p>`;
+      return `
+        <div class="custom-cat-chip" id="catChip-${i}">
+          <div class="custom-cat-chip-header" onclick="toggleCatChip(${i})">
+            <span class="custom-cat-swatch" style="background:${cat.hues[0]};"></span>
+            <span class="custom-cat-name">${cat.label}</span>
+            <span class="custom-cat-count">${cat.words.length} word${cat.words.length !== 1 ? 's' : ''}</span>
+            <span class="custom-cat-chevron">▼</span>
+            <button class="custom-cat-remove" onclick="event.stopPropagation(); removeCustomCat(${i})" title="Remove">×</button>
+          </div>
+          <div class="custom-cat-words">
+            <div class="custom-cat-words-grid">${wordPills}</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function toggleCatChip(i) {
+    const chip = document.getElementById('catChip-' + i);
+    if (chip) chip.classList.toggle('expanded');
   }
 
   function removeCustomCat(i) {
@@ -737,7 +875,7 @@
     const match = getBestMatch(w);
     let hex, label, tagBg, tagText, isFallback = false, isCustom = false;
     if (match) {
-      hex = pickHue(match); label = match.label; tagBg = match.tagBg; tagText = match.tagText;
+      hex = pickHue(match, w + _id); label = match.label; tagBg = match.tagBg; tagText = match.tagText;
       if (customCategories.find(c => c.label === match.label)) isCustom = true;
     } else {
       const fb = fallbackColor(w); hex = fb.hex; label = fb.label; tagBg = fb.tagBg; tagText = fb.tagText; isFallback = true;
