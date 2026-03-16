@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Word color translator</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&family=DM+Mono&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #F7F5F0;
+      --surface: #FFFFFF;
+      --border: rgba(0,0,0,0.08);
+      --border-strong: rgba(0,0,0,0.14);
+      --text-primary: #1A1916;
+      --text-secondary: #6B6860;
+      --text-tertiary: #A09D98;
+      --radius-card: 16px;
+      --radius-sm: 8px;
+      --font-display: 'DM Serif Display', serif;
+      --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      padding: 0 0 80px;
+    }
+
+    /* Header */
+    header {
+      padding: 56px 32px 40px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    header h1 {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 5vw, 48px);
+      font-weight: 400;
+      letter-spacing: -0.5px;
+      line-height: 1.15;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+    }
+
+    header p {
+      font-size: 15px;
+      color: var(--text-secondary);
+      font-weight: 300;
+      line-height: 1.6;
+      max-width: 480px;
+    }
+
+    /* Input area */
+    .input-section {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 32px 32px;
+    }
+
+    .input-wrap {
+      display: flex;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-card);
+      padding: 8px 8px 8px 20px;
+      transition: box-shadow 0.2s;
+    }
+
+    .input-wrap:focus-within {
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.06);
+      border-color: rgba(0,0,0,0.22);
+    }
+
+    .input-wrap input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-family: var(--font-body);
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--text-primary);
+      min-width: 0;
+    }
+
+    .input-wrap input::placeholder { color: var(--text-tertiary); }
+
+    .input-wrap button {
+      background: var(--text-primary);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 22px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+
+    .input-wrap button:hover { opacity: 0.82; }
+    .input-wrap button:active { transform: scale(0.97); }
+
+    /* Hint chips */
+    .hints {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-top: 12px;
+    }
+
+    .hint-chip {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      user-select: none;
+    }
+
+    .hint-chip:hover { border-color: var(--border-strong); color: var(--text-primary); }
+
+    /* Palette */
+    .palette {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Card */
+    .card {
+      display: flex;
+      align-items: stretch;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      animation: rise 0.3s cubic-bezier(0.22,1,0.36,1) both;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .swatch {
+      width: 80px;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .card-body {
+      flex: 1;
+      padding: 16px 18px;
+      min-width: 0;
+    }
+
+    .card-word {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      text-transform: lowercase;
+    }
+
+    .card-hex {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .card-hex:hover { background: var(--bg); color: var(--text-primary); }
+    .card-hex.ok { color: #1A6B40; background: #D5F5E3; }
+
+    .card-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.03em;
+      text-transform: lowercase;
+    }
+
+    .card-actions {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      gap: 8px;
+    }
+
+    .copy-btn {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-strong);
+      background: transparent;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+
+    .copy-btn:hover { background: var(--bg); color: var(--text-primary); }
+    .copy-btn.ok { color: #1A6B40; border-color: #1A6B40; }
+
+    .remove-btn {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-tertiary);
+      font-size: 16px;
+      line-height: 1;
+      transition: background 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .remove-btn:hover { background: #FEE2E2; color: #B91C1C; border-color: #FECACA; }
+
+    /* Empty state */
+    .empty {
+      text-align: center;
+      padding: 64px 0 32px;
+      color: var(--text-tertiary);
+    }
+
+    .empty-icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+      opacity: 0.4;
+    }
+
+    .empty p {
+      font-size: 14px;
+      line-height: 1.6;
+      font-weight: 300;
+    }
+
+    /* Toolbar */
+    .toolbar {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 32px 12px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+    }
+
+    .clear-btn {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-body);
+      padding: 4px 0;
+      transition: color 0.15s;
+    }
+
+    .clear-btn:hover { color: #B91C1C; }
+
+    .export-btn {
+      font-size: 12px;
+      color: var(--text-secondary);
+      background: transparent;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: var(--font-body);
+      padding: 4px 12px;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .export-btn:hover { background: var(--surface); color: var(--text-primary); border-color: rgba(0,0,0,0.22); }
+    .export-btn.ok { color: #1A6B40; border-color: #1A6B40; }
+
+    /* Define panel - shown on fallback cards */
+    .define-btn {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      background: transparent;
+      border: 1px dashed var(--border-strong);
+      border-radius: 20px;
+      padding: 3px 10px;
+      cursor: pointer;
+      font-family: var(--font-body);
+      margin-top: 6px;
+      display: inline-block;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .define-btn:hover { color: var(--text-primary); border-color: rgba(0,0,0,0.3); border-style: solid; }
+
+    .define-panel {
+      margin-top: 10px;
+      padding: 12px;
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .define-panel label {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      display: block;
+      margin-bottom: 6px;
+      text-transform: lowercase;
+      letter-spacing: 0.03em;
+    }
+
+    .define-row { display: flex; gap: 6px; align-items: center; }
+
+    .define-input {
+      flex: 1;
+      font-size: 13px;
+      font-family: var(--font-body);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      padding: 5px 10px;
+      background: var(--surface);
+      color: var(--text-primary);
+      outline: none;
+      min-width: 0;
+    }
+    .define-input:focus { border-color: rgba(0,0,0,0.3); }
+
+    .define-preview {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+
+    .define-confirm {
+      font-size: 12px;
+      font-family: var(--font-body);
+      background: var(--text-primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 5px 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.15s;
+      flex-shrink: 0;
+    }
+    .define-confirm:hover { opacity: 0.8; }
+    .define-confirm:disabled { opacity: 0.35; cursor: default; }
+
+    /* Custom categories section */
+    .custom-cats-section {
+      max-width: 720px;
+      margin: 32px auto 0;
+      padding: 0 32px;
+    }
+
+    .custom-cats-header {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-bottom: 10px;
+      letter-spacing: 0.04em;
+      text-transform: lowercase;
+    }
+
+    .custom-cat-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .custom-cat-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 6px 4px 10px;
+      color: var(--text-secondary);
+    }
+
+    .custom-cat-swatch {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .custom-cat-remove {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--text-tertiary);
+      font-size: 14px;
+      line-height: 1;
+      padding: 0 2px;
+      transition: color 0.15s;
+    }
+    .custom-cat-remove:hover { color: #B91C1C; }
+
+    /* Responsive */
+    @media (max-width: 560px) {
+      header, .input-section, .palette, .toolbar { padding-left: 20px; padding-right: 20px; }
+      .swatch { width: 56px; }
+      .card-word { font-size: 18px; }
+      .card-actions { padding: 12px 10px; gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Word color<br>translator</h1>
+  <p>Type any word and see the color it emotionally carries - based on color psychology and symbolic meaning, not math.</p>
+</header>
+
+<div class="input-section">
+  <div class="input-wrap">
+    <input type="text" id="inp" placeholder="love, ocean, mystery, forest..." autocomplete="off" />
+    <button onclick="go()">Translate</button>
+  </div>
+  <div class="hints">
+    <span class="hint-chip" onclick="quickAdd('love')">love</span>
+    <span class="hint-chip" onclick="quickAdd('grief')">grief</span>
+    <span class="hint-chip" onclick="quickAdd('rage')">rage</span>
+    <span class="hint-chip" onclick="quickAdd('nostalgia')">nostalgia</span>
+    <span class="hint-chip" onclick="quickAdd('lonely')">lonely</span>
+    <span class="hint-chip" onclick="quickAdd('storm')">storm</span>
+    <span class="hint-chip" onclick="quickAdd('wander')">wander</span>
+    <span class="hint-chip" onclick="quickAdd('truth')">truth</span>
+    <span class="hint-chip" onclick="quickAdd('chaos')">chaos</span>
+    <span class="hint-chip" onclick="quickAdd('silence')">silence</span>
+    <span class="hint-chip" onclick="quickAdd('city')">city</span>
+    <span class="hint-chip" onclick="quickAdd('survive')">survive</span>
+    <span class="hint-chip" onclick="quickAdd('dream')">dream</span>
+    <span class="hint-chip" onclick="quickAdd('scent')">scent</span>
+    <span class="hint-chip" onclick="quickAdd('eternal')">eternal</span>
+  </div>
+</div>
+
+<div class="toolbar">
+  <button class="export-btn" id="exportJsonBtn" onclick="exportJSON(this)" style="display:none;">Export JSON</button>
+  <button class="export-btn" id="exportCssBtn" onclick="exportCSS(this)" style="display:none;">Export CSS</button>
+  <button class="clear-btn" id="clearBtn" onclick="clearAll()" style="display:none;">Clear all</button>
+</div>
+
+<div class="palette" id="pal"></div>
+
+<div class="custom-cats-section" id="customCatsSection" style="display:none;">
+  <p class="custom-cats-header">your categories</p>
+  <div class="custom-cat-list" id="customCatList"></div>
+</div>
+
+<script>
+  const colorMap = [
+    { keys:["love","passion","romance","desire","heart","kiss","lust","intimate","valentine","crush","adore","beloved","darling","flame","ardor","amour","devotion","affection","infatuation"], hues:["#C0392B","#E74C3C","#C0143C","#E8274B","#B03060"], label:"passion & desire", tagBg:"#FAD7D7", tagText:"#7F1D1D" },
+    { keys:["family","togetherness","home","warmth","mother","father","parent","sibling","bond","reunion","kin","hearth","belonging","childhood","nurture","roots","ancestry","heritage","community"], hues:["#E07B54","#D4642F","#C75B3A","#E8865C","#C0632A"], label:"warmth & belonging", tagBg:"#FDECD3", tagText:"#7A3A0A" },
+    { keys:["luxury","premium","royal","elite","noble","opulent","prestige","lavish","exclusive","velvet","indulgent","regal","grandeur","exquisite","sumptuous","extravagant","decadent"], hues:["#6B3FA0","#7B52AB","#4B2E83","#5C3592","#7D3C98"], label:"royalty & luxury", tagBg:"#EDE9FB", tagText:"#3C2070" },
+    { keys:["elegant","refined","sophisticated","chic","grace","poise","timeless","classic","haute","couture","polished","tasteful","cultured","poised"], hues:["#8E44AD","#C2649A","#9B3B82","#A569BD","#6C3483"], label:"elegance & refinement", tagBg:"#F5E8F8", tagText:"#5B2070" },
+    { keys:["nature","forest","jungle","tree","leaf","earth","organic","garden","flora","moss","fern","botanical","wild","terrain","woodland","meadow","grove","canopy","undergrowth"], hues:["#27AE60","#1E8449","#196F3D","#239B56","#145A32"], label:"nature & vitality", tagBg:"#D5F5E3", tagText:"#1A5E20" },
+    { keys:["green","growth","grow","thrive","spring","bloom","blossom","sprout","seedling","harvest","fertile","lush","verdant"], hues:["#2ECC71","#58D68D","#1ABC9C","#27AE60","#48C9B0"], label:"growth & renewal", tagBg:"#D1F2EB", tagText:"#0E6655" },
+    { keys:["health","healing","life","fresh","energy","vitality","wellbeing","fitness","nourish","restore","recover","revive","cleanse","balance"], hues:["#1ABC9C","#17A589","#148F77","#0E6655","#45B39D"], label:"health & renewal", tagBg:"#D1F2EB", tagText:"#0A4F45" },
+    { keys:["ocean","sea","water","wave","depth","marine","aqua","lagoon","reef","dive","nautical","sail","tide","current","abyss","deep","maritime","coastal","shore","surf"], hues:["#1A6A9A","#1F618D","#1B4F72","#2874A6","#154360"], label:"depth & freedom", tagBg:"#D6EAF8", tagText:"#1A4A7A" },
+    { keys:["calm","peace","serene","quiet","still","zen","breathe","meditate","tranquil","relax","gentle","soft","stillness","mindful","soothe","hush","repose"], hues:["#5499C7","#6CB4E4","#85C1E9","#7FB3D3","#A9CCE3"], label:"calm & serenity", tagBg:"#EBF5FB", tagText:"#1A5276" },
+    { keys:["trust","loyalty","honest","faith","reliable","steady","true","sincere","devoted","integrity","dependable","faithful","commitment","pledge"], hues:["#2471A3","#1A5276","#21618C","#2980B9","#1F618D"], label:"trust & loyalty", tagBg:"#D6EAF8", tagText:"#1A3A6A" },
+    { keys:["sky","air","cloud","breeze","wind","atmosphere","heaven","horizon","infinite","vast","open","freedom","fly","soar","glide","float","drift","ascend"], hues:["#85C1E9","#7FB3D3","#AED6F1","#5DADE2","#3498DB"], label:"sky & freedom", tagBg:"#EBF5FB", tagText:"#1A4A70" },
+    { keys:["joy","happy","happiness","fun","laugh","smile","delight","celebrate","playful","cheerful","bubbly","glee","merry","jubilant","elation","bliss","festive"], hues:["#F1C40F","#F4D03F","#F39C12","#FAD02E","#F5B301"], label:"joy & delight", tagBg:"#FEF9E7", tagText:"#7D6608" },
+    { keys:["sun","sunshine","summer","bright","warm","glow","radiant","golden","dawn","light","beam","spark","flare","luminous","brilliance","gleam","shimmer"], hues:["#F9BF3B","#F5A623","#F0932B","#E67E22","#F39C12"], label:"light & warmth", tagBg:"#FEF5E7", tagText:"#784212" },
+    { keys:["creative","inspire","imagination","dream","art","design","vision","idea","invent","original","expressive","artistic","innovative","craft","make","build","create","conceptual"], hues:["#E67E22","#D35400","#CA6F1E","#EB984E","#F0A500"], label:"creativity & inspiration", tagBg:"#FDEBD0", tagText:"#6E2C00" },
+    { keys:["mystery","dark","shadow","unknown","enigma","secret","night","hidden","occult","eerie","mystical","cryptic","veil","obscure","arcane","labyrinth","riddle"], hues:["#1C2833","#212F3C","#1A252F","#283747","#2C3E50"], label:"mystery & the unknown", tagBg:"#E5E7E9", tagText:"#1C2833" },
+    { keys:["power","strength","bold","force","mighty","fierce","dominant","intense","impact","authority","control","formidable","command","decisive","unyielding","robust"], hues:["#C0392B","#7B241C","#922B21","#2C3E50","#17202A"], label:"power & force", tagBg:"#FADBD8", tagText:"#6B0D0D" },
+    { keys:["danger","warning","alert","risk","threat","caution","emergency","alarm","critical","urgent","hazard","peril","volatile","extreme","severe"], hues:["#E74C3C","#CB4335","#B03A2E","#E52B2B","#C0392B"], label:"danger & urgency", tagBg:"#FADBD8", tagText:"#7B1010" },
+    { keys:["money","wealth","gold","rich","fortune","success","abundance","prosper","affluent","treasure","invest","profit","asset","capital","financial","lucrative","opulence"], hues:["#B7950B","#D4AC0D","#9A7D0A","#C9A20D","#A08208"], label:"wealth & abundance", tagBg:"#FEF9E7", tagText:"#6B4A00" },
+    { keys:["purity","clean","pure","white","innocent","clear","blank","void","minimal","simple","bare","empty","pristine","immaculate","untouched","transparent","crystal"], hues:["#BDC3C7","#AAB7B8","#ABB2B9","#979A9A","#CCD1D1"], label:"purity & clarity", tagBg:"#F2F3F4", tagText:"#444441" },
+    { keys:["pink","feminine","soft","tender","delicate","blossom","rose","petal","sweet","candy","blush","gentle","dainty","graceful","cherish"], hues:["#E91E8C","#D81B8A","#C2185B","#E57AB3","#F06292"], label:"tenderness & softness", tagBg:"#FCE4EC", tagText:"#7D1B4A" },
+    { keys:["wisdom","knowledge","learn","study","mind","intellect","think","reason","logic","truth","insight","clarity","philosophy","sage","scholarly","academic","curious","understand"], hues:["#8E44AD","#6C3483","#76448A","#9B59B6","#7D3C98"], label:"wisdom & intellect", tagBg:"#EDE9FB", tagText:"#3C1060" },
+    { keys:["spiritual","soul","divine","sacred","holy","transcend","ethereal","cosmic","celestial","astral","chakra","aura","mystic","enlighten","awaken","universe","infinite","beyond"], hues:["#7D3C98","#6C3483","#4A235A","#5B2C6F","#663399"], label:"spirituality & the divine", tagBg:"#F5EEF8", tagText:"#3B1754" },
+    { keys:["music","sound","rhythm","melody","beat","harmony","song","tune","acoustic","jazz","soul","vibe","lyric","chord","tempo","bass","treble","resonance"], hues:["#8E44AD","#E91E8C","#C0392B","#E67E22","#7D3C98"], label:"rhythm & expression", tagBg:"#EDE9FB", tagText:"#4A1A6A" },
+    { keys:["fire","heat","fierce","blaze","burn","flame","ignite","inferno","ember","scorch","sear","rage","fury","volcanic","molten","combustion"], hues:["#E74C3C","#E67E22","#D35400","#C0392B","#F39C12"], label:"fire & intensity", tagBg:"#FADBD8", tagText:"#7B1D0D" },
+    { keys:["ice","cold","winter","frost","freeze","arctic","glacier","crisp","chill","polar","snow","blizzard","frozen","tundra","cool"], hues:["#AED6F1","#85C1E9","#D6EAF8","#A9CCE3","#BDC3C7"], label:"cold & clarity", tagBg:"#EBF5FB", tagText:"#1A4A6A" },
+    { keys:["sand","desert","arid","dune","terracotta","clay","stone","pebble","mineral","rocky","barren","ancient","ruins","nomad","caravan"], hues:["#C8A27A","#B5895A","#A0714A","#C9A27A","#D4A86A"], label:"earth & time", tagBg:"#FDEBD0", tagText:"#6E3800" },
+    { keys:["technology","tech","digital","code","data","cyber","network","future","ai","virtual","pixel","binary","algorithm","software","hardware","interface","program"], hues:["#2980B9","#1A6A9A","#1C2833","#2ECC71","#1ABC9C"], label:"technology & the future", tagBg:"#D6EAF8", tagText:"#1A3A6A" },
+    { keys:["hope","optimism","wish","aspire","believe","faith","possibility","potential","opportunity","chance","maybe","horizon","tomorrow"], hues:["#F1C40F","#5DADE2","#2ECC71","#F39C12","#27AE60"], label:"hope & possibility", tagBg:"#FEF9E7", tagText:"#5D6608" },
+
+    // Human emotions
+    { keys:["fear","afraid","terror","dread","fright","panic","phobia","anxiety","nervous","tremble","cower","horror","frightened","apprehensive","uneasy","foreboding"], hues:["#4A3F55","#5C4A6B","#3D3347","#6B5780","#52466A"], label:"fear & anxiety", tagBg:"#EDE9F5", tagText:"#3D2B5E" },
+    { keys:["grief","sorrow","mourning","loss","heartbreak","despair","anguish","bereave","weep","mourn","lament","desolate","bereft","melancholy","inconsolable"], hues:["#5D6D7E","#4A5568","#2E4057","#607080","#3D5166"], label:"grief & sorrow", tagBg:"#E8ECF0", tagText:"#2E4057" },
+    { keys:["rage","anger","fury","wrath","outrage","furious","irate","livid","incensed","seething","explosive","temper","hostility","aggression","resentment"], hues:["#A93226","#922B21","#7B241C","#C0392B","#B03A2E"], label:"rage & fury", tagBg:"#FADBD8", tagText:"#7B1010" },
+    { keys:["envy","jealous","jealousy","covet","resentful","bitterness","spite","grudge","rivalry","competitive","insecure","possessive"], hues:["#1E8449","#196F3D","#145A32","#27AE60","#1A7A42"], label:"envy & rivalry", tagBg:"#D5F5E3", tagText:"#145A32" },
+    { keys:["shame","guilt","regret","remorse","embarrass","humiliate","disgrace","blush","mortify","abash","dishonor","contempt","inferior","worthless"], hues:["#A04000","#873600","#6E2C00","#C0632A","#935116"], label:"shame & regret", tagBg:"#FDEBD0", tagText:"#6E2C00" },
+    { keys:["pride","proud","dignity","honor","self-worth","confidence","achievement","accomplishment","triumph","glory","esteem","validation","respect"], hues:["#D4AC0D","#B7950B","#9A7D0A","#F0C030","#C9A227"], label:"pride & dignity", tagBg:"#FEF9E7", tagText:"#7D6608" },
+    { keys:["lonely","loneliness","isolated","solitude","alone","abandoned","forsaken","withdrawn","recluse","empty","hollow","disconnected","detached","yearning"], hues:["#5D6D7E","#85929E","#7F8C8D","#ABB2B9","#717D7E"], label:"loneliness & solitude", tagBg:"#EAECEE", tagText:"#424949" },
+    { keys:["nostalgia","nostalgic","wistful","reminisce","remember","longing","yearning","bittersweet","sentimental","fond","cherished","past","memory","memories","recall","recollect"], hues:["#CB8A4B","#C27A3A","#B5723A","#D4956A","#C98B5A"], label:"nostalgia & memory", tagBg:"#FDEBD0", tagText:"#784212" },
+    { keys:["curious","curiosity","wonder","fascination","intrigue","captivate","explore","question","investigate","discover","puzzle","ponder","contemplate"], hues:["#2471A3","#1F618D","#5DADE2","#2E86C1","#1A7FC1"], label:"curiosity & wonder", tagBg:"#D6EAF8", tagText:"#1A4A7A" },
+
+    // Body & senses
+    { keys:["skin","flesh","body","touch","feel","tactile","texture","surface","tangible","physical","sensory","sensual","caress","stroke","warmth","contact"], hues:["#D4A574","#C8956A","#BF8A5E","#E0B896","#C9956A"], label:"touch & the body", tagBg:"#FDEBD0", tagText:"#784212" },
+    { keys:["scent","smell","fragrance","perfume","aroma","odor","whiff","inhale","nose","olfactory","incense","bouquet","musty","floral","earthy","smoky"], hues:["#A569BD","#9B59B6","#8E44AD","#7D3C98","#BDC0BA"], label:"scent & fragrance", tagBg:"#F5EEF8", tagText:"#5B2C6F" },
+    { keys:["taste","flavor","savory","sweet","bitter","sour","salt","umami","palate","cuisine","delicious","gastronomy","culinary","mouth","tongue","appetite"], hues:["#E67E22","#D35400","#CA6F1E","#F0A500","#EB984E"], label:"taste & flavor", tagBg:"#FDEBD0", tagText:"#6E2C00" },
+    { keys:["hunger","thirst","crave","desire","appetite","starved","ravenous","longing","yearning","want","need","consume","devour","feast","indulge"], hues:["#C0392B","#E07B54","#D35400","#CB4335","#A93226"], label:"hunger & craving", tagBg:"#FADBD8", tagText:"#7B1D0D" },
+    { keys:["breath","breathe","exhale","inhale","lung","oxygen","sigh","gasp","wheeze","pant","respire","air","wind","flow","circulation","pulse","heartbeat"], hues:["#85C1E9","#AED6F1","#5DADE2","#7EC8E3","#A9D4E8"], label:"breath & life force", tagBg:"#EBF5FB", tagText:"#1A4A70" },
+    { keys:["pain","ache","hurt","wound","injury","sore","throb","sting","burn","bruise","fracture","trauma","tender","raw","affliction"], hues:["#922B21","#7B241C","#6B1A14","#A93226","#8B2019"], label:"pain & wound", tagBg:"#FADBD8", tagText:"#6B0D0D" },
+    { keys:["sleep","dream","slumber","rest","doze","drowsy","twilight","dusk","lull","drift","subconscious","hypnotic","trance","vision","reverie","somnolent"], hues:["#4A235A","#5B2C6F","#6C3483","#512E5F","#3B1754"], label:"sleep & dreams", tagBg:"#F5EEF8", tagText:"#3B1754" },
+
+    // Time & change
+    { keys:["past","history","yesterday","before","former","previous","bygone","ancient","old","archaic","antique","legacy","tradition","heritage","retrograde"], hues:["#C8A27A","#B5895A","#A0714A","#8B6348","#9C7A5A"], label:"the past", tagBg:"#FDEBD0", tagText:"#6E3800" },
+    { keys:["future","tomorrow","ahead","next","coming","forthcoming","prospect","advance","progress","evolve","change","innovation","modern","contemporary","forward"], hues:["#1ABC9C","#17A589","#148F77","#2ECC71","#0E9B7A"], label:"the future", tagBg:"#D1F2EB", tagText:"#0E6655" },
+    { keys:["decay","rot","ruin","crumble","fade","wither","deteriorate","decompose","corrode","erode","degrade","collapse","obsolete","worn","weathered","aged"], hues:["#7D6608","#6D5D07","#5D4E06","#8D7A20","#A08208"], label:"decay & time", tagBg:"#FEF9E7", tagText:"#6B4A00" },
+    { keys:["eternal","forever","immortal","timeless","infinite","everlasting","perpetual","enduring","permanent","undying","ageless","boundless","ceaseless"], hues:["#1B2631","#212F3D","#17202A","#1A252F","#0D1117"], label:"eternity & the infinite", tagBg:"#E5E7E9", tagText:"#1C2833" },
+    { keys:["moment","instant","now","present","fleeting","temporary","transient","brief","ephemeral","passing","swift","sudden","immediate","spontaneous"], hues:["#F9BF3B","#F5A623","#FAD02E","#F0C030","#EFC050"], label:"the present moment", tagBg:"#FEF5E7", tagText:"#7D6000" },
+    { keys:["cycle","season","rhythm","pattern","repeat","return","recurring","circle","loop","rotation","revolution","orbit","flow","tide","ebb"], hues:["#1ABC9C","#2471A3","#8E44AD","#E67E22","#27AE60"], label:"cycles & rhythm", tagBg:"#D1F2EB", tagText:"#0A4F45" },
+
+    // Places & spaces
+    { keys:["city","urban","street","metropolitan","downtown","skyline","avenue","boulevard","district","neighborhood","suburb","town","block","corner","sidewalk","concrete","asphalt"], hues:["#717D7E","#626567","#566573","#5D6D7E","#4D5656"], label:"city & urban life", tagBg:"#EAECEE", tagText:"#2E4053" },
+    { keys:["village","rural","countryside","pastoral","farmland","hamlet","cottage","barn","field","meadow","pasture","orchard","brook","mill","fence","lane"], hues:["#7D6608","#6B8E23","#556B2F","#8B7355","#9A8A5A"], label:"village & countryside", tagBg:"#FDEBD0", tagText:"#4A3800" },
+    { keys:["room","space","interior","chamber","hall","corridor","threshold","doorway","window","ceiling","floor","wall","corner","nook","alcove","shelter","refuge"], hues:["#C8A27A","#B5895A","#D4B896","#CBA882","#D2B48C"], label:"spaces & interiors", tagBg:"#FDEBD0", tagText:"#6E3800" },
+    { keys:["bridge","crossing","passage","transit","connect","link","span","arch","overpass","threshold","portal","gateway","entrance","exit","boundary","border"], hues:["#717D7E","#85929E","#566573","#808B96","#707B7C"], label:"bridges & crossings", tagBg:"#EAECEE", tagText:"#2E4053" },
+    { keys:["mountain","peak","summit","cliff","highland","altitude","ridge","canyon","valley","terrain","rugged","steep","ascent","descent","trail","wilderness"], hues:["#717D7E","#5D6D7E","#4A5568","#566573","#6B7A8D"], label:"mountains & heights", tagBg:"#EAECEE", tagText:"#2E4053" },
+    { keys:["island","remote","isolated","oasis","refuge","sanctuary","retreat","hideaway","seclusion","paradise","tropical","coast","shore","beach","harbor"], hues:["#1ABC9C","#17A589","#5DADE2","#2E86C1","#45B7D1"], label:"islands & sanctuary", tagBg:"#D1F2EB", tagText:"#0E6655" },
+
+    // Weather & elements
+    { keys:["storm","thunder","lightning","tempest","hurricane","tornado","cyclone","typhoon","gale","squall","turbulent","violent","fierce","wild","chaos"], hues:["#2C3E50","#1C2833","#212F3C","#283747","#17202A"], label:"storm & chaos", tagBg:"#E5E7E9", tagText:"#1C2833" },
+    { keys:["fog","mist","haze","vapor","obscure","vague","unclear","blur","cloud","murky","overcast","grey","gray","dim","dull","diffuse","ambiguous"], hues:["#85929E","#95A5A6","#AAB7B8","#A0A9A9","#9EAAAA"], label:"fog & ambiguity", tagBg:"#EAECEE", tagText:"#424949" },
+    { keys:["rain","drizzle","shower","downpour","pour","wet","damp","humid","moisture","droplet","flood","deluge","torrent","cascade","cleanse"], hues:["#2980B9","#2471A3","#1F618D","#5DADE2","#1A6A9A"], label:"rain & cleansing", tagBg:"#D6EAF8", tagText:"#1A4A7A" },
+    { keys:["rainbow","spectrum","prism","refraction","multicolor","vibrant","vivid","colorful","bright","dazzle","iridescent","kaleidoscope","chromatic"], hues:["#E74C3C","#E67E22","#F1C40F","#2ECC71","#9B59B6"], label:"spectrum & color", tagBg:"#FEF9E7", tagText:"#5D3608" },
+    { keys:["drought","arid","dry","parched","barren","withered","scorched","harsh","desolate","empty","sparse","scarce","depleted","exhausted"], hues:["#A04000","#873600","#784212","#C0632A","#935116"], label:"drought & scarcity", tagBg:"#FDEBD0", tagText:"#6E2C00" },
+    { keys:["earthquake","eruption","volcano","seismic","tectonic","rupture","tremor","shatter","fracture","unstable","volatile","explosive","erupt","force","pressure"], hues:["#922B21","#7B241C","#CB4335","#E74C3C","#A93226"], label:"eruption & rupture", tagBg:"#FADBD8", tagText:"#7B1010" },
+
+    // Conflict & struggle
+    { keys:["war","battle","conflict","combat","fight","soldier","military","weapon","army","enemy","siege","conquest","invasion","warfare","frontline","trench"], hues:["#4A5568","#2D3748","#1A202C","#556B2F","#4B5320"], label:"war & conflict", tagBg:"#E5E7E9", tagText:"#1C2833" },
+    { keys:["survive","survival","endure","persist","overcome","resilient","withstand","resist","outlast","persevere","tenacious","grit","determination","fight","struggle"], hues:["#CA6F1E","#A04000","#873600","#D35400","#C0632A"], label:"survival & resilience", tagBg:"#FDEBD0", tagText:"#6E2C00" },
+    { keys:["wound","scar","broken","shattered","fractured","damaged","impaired","hurt","injured","afflicted","scarred","battered","bruised","fragile","vulnerable"], hues:["#7B241C","#922B21","#6B1A14","#8B2019","#A93226"], label:"wounds & scars", tagBg:"#FADBD8", tagText:"#6B0D0D" },
+    { keys:["justice","injustice","right","wrong","moral","ethics","fairness","equality","law","order","court","judgment","verdict","balance","equity","accountability"], hues:["#1F618D","#1A5276","#1B4F72","#21618C","#154360"], label:"justice & ethics", tagBg:"#D6EAF8", tagText:"#1A3A6A" },
+    { keys:["rebel","revolt","revolution","uprising","resist","defiance","protest","dissent","radical","subversive","challenge","overthrow","freedom","liberation","autonomy"], hues:["#C0392B","#E74C3C","#922B21","#B03A2E","#A93226"], label:"rebellion & defiance", tagBg:"#FADBD8", tagText:"#7B1010" },
+
+    // Movement & journey
+    { keys:["wander","wander","nomad","roam","drift","meander","stroll","ramble","trek","traverse","explore","venture","voyage","expedition","journey","pilgrimage"], hues:["#CA8A04","#B45309","#92400E","#D97706","#A16207"], label:"wandering & exploration", tagBg:"#FEF3C7", tagText:"#78350F" },
+    { keys:["travel","trip","road","route","path","trail","direction","navigate","compass","map","destination","arrive","depart","distance","miles","km"], hues:["#D97706","#B45309","#92400E","#CA8A04","#C07010"], label:"travel & the road", tagBg:"#FEF3C7", tagText:"#78350F" },
+    { keys:["escape","flee","run","rush","hurry","urgent","swift","fast","rapid","chase","pursue","race","sprint","dash","burst","accelerate"], hues:["#DC2626","#B91C1C","#991B1B","#C0392B","#A93226"], label:"escape & urgency", tagBg:"#FADBD8", tagText:"#7B1010" },
+    { keys:["lost","confused","disoriented","uncertain","adrift","aimless","directionless","bewildered","maze","labyrinth","tangled","unclear","unsure","doubt","hesitation"], hues:["#6B7280","#4B5563","#374151","#9CA3AF","#718096"], label:"being lost", tagBg:"#EAECEE", tagText:"#374151" },
+    { keys:["arrive","arrival","homecoming","return","reach","destination","complete","achieve","finish","end","culminate","accomplish","landing","settle","establish"], hues:["#059669","#047857","#065F46","#10B981","#34D399"], label:"arrival & completion", tagBg:"#D1FAE5", tagText:"#065F46" },
+    { keys:["migrate","migration","diaspora","displacement","refugee","exile","foreign","abroad","overseas","immigration","homeland","origin","roots","transplant"], hues:["#7C3AED","#6D28D9","#5B21B6","#8B5CF6","#7C3AED"], label:"migration & belonging", tagBg:"#EDE9FE", tagText:"#4C1D95" },
+
+    // Abstract concepts
+    { keys:["truth","honest","real","authentic","genuine","sincere","transparent","candid","frank","direct","straightforward","factual","accurate","verity","veritas"], hues:["#1F618D","#2471A3","#1A5276","#2980B9","#154360"], label:"truth & authenticity", tagBg:"#D6EAF8", tagText:"#1A3A6A" },
+    { keys:["beauty","beautiful","aesthetic","gorgeous","stunning","lovely","attractive","magnificent","splendid","sublime","exquisite","breathtaking","radiant","allure"], hues:["#E91E8C","#C2185B","#D81B8A","#F06292","#E57AB3"], label:"beauty & aesthetics", tagBg:"#FCE4EC", tagText:"#7D1B4A" },
+    { keys:["chaos","disorder","entropy","random","unpredictable","erratic","turbulent","disarray","mayhem","confusion","jumbled","tangled","volatile","unstable","frenzy"], hues:["#E74C3C","#9B59B6","#E67E22","#F1C40F","#2ECC71"], label:"chaos & disorder", tagBg:"#FADBD8", tagText:"#7B1010" },
+    { keys:["order","structure","system","organize","arrange","method","discipline","control","regulate","framework","pattern","hierarchy","sequence","logic","precision"], hues:["#2471A3","#1F618D","#1A5276","#21618C","#1B4F72"], label:"order & structure", tagBg:"#D6EAF8", tagText:"#1A3A6A" },
+    { keys:["justice","freedom","liberty","democracy","rights","equality","fairness","independent","sovereign","emancipate","liberate","free","autonomous","self-determined"], hues:["#2980B9","#F1C40F","#E74C3C","#1F618D","#C0392B"], label:"freedom & rights", tagBg:"#D6EAF8", tagText:"#1A3A6A" },
+    { keys:["time","space","dimension","reality","existence","consciousness","perception","awareness","being","presence","essence","identity","self","ego","psyche"], hues:["#6C3483","#5B2C6F","#4A235A","#7D3C98","#512E5F"], label:"existence & consciousness", tagBg:"#F5EEF8", tagText:"#3B1754" },
+    { keys:["change","transform","transition","metamorphosis","evolve","shift","alter","convert","adapt","morph","flux","dynamic","fluid","mutable","unstable","becoming"], hues:["#1ABC9C","#8E44AD","#E67E22","#2980B9","#E74C3C"], label:"change & transformation", tagBg:"#D1F2EB", tagText:"#0E6655" },
+    { keys:["silence","quiet","stillness","void","empty","nothing","absence","blank","zero","null","hollow","hush","mute","wordless","soundless","pause"], hues:["#BDC3C7","#AAB7B8","#CCD1D1","#D5D8DC","#ABB2B9"], label:"silence & the void", tagBg:"#F2F3F4", tagText:"#444441" },
+  ];
+
+  function hslToHex(h, s, l) {
+    s /= 100; l /= 100;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => { const k = (n + h / 30) % 12; const c = l - a * Math.max(Math.min(k-3, 9-k, 1), -1); return Math.round(255*c).toString(16).padStart(2,'0'); };
+    return `#${f(0)}${f(8)}${f(4)}`;
+  }
+
+  function pickHue(entry) {
+    return entry.hues[Math.floor(Math.random() * entry.hues.length)];
+  }
+
+  function fallbackColor(word) {
+    let h = 0;
+    for (let i = 0; i < word.length; i++) h = (h * 37 + word.charCodeAt(i)) >>> 0;
+    return { hex: hslToHex(h % 360, 42 + h % 22, 38 + h % 18), label: 'unique word color', tagBg: '#EBEBEB', tagText: '#555' };
+  }
+
+  let customCategories = [];
+
+  function loadCustomCategories() {
+    try { const r = localStorage.getItem('wct_custom_categories'); if (r) customCategories = JSON.parse(r); } catch(e) {}
+  }
+
+  function saveCustomCategories() {
+    try { localStorage.setItem('wct_custom_categories', JSON.stringify(customCategories)); } catch(e) {}
+  }
+
+  function getCustomMatch(word) {
+    const w = word.toLowerCase().trim();
+    for (const cat of customCategories) {
+      if (cat.words.map(x => x.toLowerCase()).includes(w)) return cat;
+    }
+    return null;
+  }
+
+  function getBestMatch(word) {
+    const w = word.toLowerCase().trim();
+    const custom = getCustomMatch(w);
+    if (custom) return custom;
+    for (const e of colorMap) if (e.keys.includes(w)) return e;
+    for (const e of colorMap) for (const k of e.keys) if (w.includes(k) || k.includes(w)) return e;
+    return null;
+  }
+
+  function suggestColorForCategory(name) {
+    const match = getBestMatch(name);
+    if (match) { const hex = pickHue(match); return { hex, tagBg: match.tagBg, tagText: match.tagText }; }
+    const fb = fallbackColor(name);
+    return { hex: fb.hex, tagBg: '#EBEBEB', tagText: '#555' };
+  }
+
+  function renderCustomCats() {
+    const section = document.getElementById('customCatsSection');
+    const list = document.getElementById('customCatList');
+    if (!customCategories.length) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+    list.innerHTML = customCategories.map((cat, i) => `
+      <div class="custom-cat-chip">
+        <span class="custom-cat-swatch" style="background:${cat.hues[0]};"></span>
+        <span>${cat.label}</span>
+        <span style="color:var(--text-tertiary);font-size:11px;">(${cat.words.length} word${cat.words.length !== 1 ? 's' : ''})</span>
+        <button class="custom-cat-remove" onclick="removeCustomCat(${i})" title="Remove">×</button>
+      </div>
+    `).join('');
+  }
+
+  function removeCustomCat(i) {
+    customCategories.splice(i, 1);
+    saveCustomCategories();
+    renderCustomCats();
+    render();
+  }
+
+  function openDefinePanel(id) {
+    const panel = document.getElementById('dp-' + id);
+    if (!panel) return;
+    const isOpen = panel.style.display !== 'none';
+    panel.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) { const inp = panel.querySelector('.define-input'); if (inp) { inp.focus(); updatePreview(id); } }
+  }
+
+  function updatePreview(id) {
+    const inp = document.getElementById('di-' + id);
+    const preview = document.getElementById('dprev-' + id);
+    const btn = document.getElementById('dconf-' + id);
+    if (!inp || !preview) return;
+    const val = inp.value.trim();
+    if (val.length > 0) {
+      const s = suggestColorForCategory(val);
+      preview.style.background = s.hex;
+      preview.dataset.hex = s.hex;
+      preview.dataset.tagBg = s.tagBg;
+      preview.dataset.tagText = s.tagText;
+      if (btn) btn.disabled = false;
+    } else {
+      preview.style.background = 'var(--border)';
+      if (btn) btn.disabled = true;
+    }
+  }
+
+  function confirmCategory(id) {
+    const r = results.find(x => x.id == id);
+    const inp = document.getElementById('di-' + id);
+    const preview = document.getElementById('dprev-' + id);
+    if (!r || !inp || !preview) return;
+    const label = inp.value.trim();
+    if (!label) return;
+    const hex = preview.dataset.hex || fallbackColor(label).hex;
+    const tagBg = preview.dataset.tagBg || '#EBEBEB';
+    const tagText = preview.dataset.tagText || '#555';
+    const existing = customCategories.find(c => c.label.toLowerCase() === label.toLowerCase());
+    if (existing) { if (!existing.words.includes(r.word.toLowerCase())) existing.words.push(r.word.toLowerCase()); }
+    else { customCategories.push({ label, hues: [hex], tagBg, tagText, words: [r.word.toLowerCase()] }); }
+    saveCustomCategories();
+    r.hex = hex; r.label = label; r.tagBg = tagBg; r.tagText = tagText; r.isCustom = true; r.isFallback = false;
+    renderCustomCats();
+    render();
+  }
+
+  function copyText(text, el, original) {
+    const done = () => {
+      el.textContent = 'Copied!'; el.classList.add('ok');
+      setTimeout(() => { el.textContent = original; el.classList.remove('ok'); }, 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    } else {
+      fallbackCopy(text, done);
+    }
+  }
+
+  function fallbackCopy(text, done) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); done(); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+
+  let _id = 1;
+  const results = [];
+
+  function go() {
+    const inp = document.getElementById('inp');
+    const raw = inp.value.trim();
+    if (!raw) return;
+    raw.split(/\s+/).filter(Boolean).forEach(addWord);
+    inp.value = '';
+    inp.focus();
+  }
+
+  function quickAdd(w) { addWord(w); }
+
+  function addWord(w) {
+    const match = getBestMatch(w);
+    let hex, label, tagBg, tagText, isFallback = false, isCustom = false;
+    if (match) {
+      hex = pickHue(match); label = match.label; tagBg = match.tagBg; tagText = match.tagText;
+      if (customCategories.find(c => c.label === match.label)) isCustom = true;
+    } else {
+      const fb = fallbackColor(w); hex = fb.hex; label = fb.label; tagBg = fb.tagBg; tagText = fb.tagText; isFallback = true;
+    }
+    results.unshift({ word: w, hex, label, tagBg, tagText, id: _id++, isFallback, isCustom });
+    render();
+  }
+
+  function removeItem(id) {
+    const idx = results.findIndex(r => r.id == id);
+    if (idx > -1) results.splice(idx, 1);
+    render();
+  }
+
+  function clearAll() { results.length = 0; render(); }
+
+  function cp(id, btn) {
+    const r = results.find(x => x.id == id);
+    if (r) copyText(r.hex.toUpperCase(), btn, r.hex.toUpperCase());
+  }
+
+  function cpHex(id, el) {
+    const r = results.find(x => x.id == id);
+    if (r) copyText(r.hex.toUpperCase(), el, r.hex.toUpperCase());
+  }
+
+  function render() {
+    const pal = document.getElementById('pal');
+    const show = results.length ? 'block' : 'none';
+    document.getElementById('clearBtn').style.display = show;
+    document.getElementById('exportJsonBtn').style.display = show;
+    document.getElementById('exportCssBtn').style.display = show;
+    if (!results.length) {
+      pal.innerHTML = '<div class="empty"><div class="empty-icon">◎</div><p>Type a word above to see its color meaning.<br>Try love, ocean, mystery, or luxury.</p></div>';
+      return;
+    }
+    pal.innerHTML = results.map(r => {
+      const id = r.id;
+      const defineSection = r.isFallback ? `
+        <button class="define-btn" onclick="openDefinePanel(${id})">+ define this word</button>
+        <div class="define-panel" id="dp-${id}" style="display:none;">
+          <label>what category does "${r.word}" belong to?</label>
+          <div class="define-row">
+            <input class="define-input" id="di-${id}" type="text" placeholder="e.g. persian words, tech brands..." oninput="updatePreview(${id})" onkeydown="if(event.key==='Enter')confirmCategory(${id})" />
+            <div class="define-preview" id="dprev-${id}"></div>
+            <button class="define-confirm" id="dconf-${id}" onclick="confirmCategory(${id})" disabled>Save</button>
+          </div>
+        </div>` : '';
+      return `
+        <div class="card">
+          <div class="swatch" style="background:${r.hex};"></div>
+          <div class="card-body">
+            <p class="card-word">${r.word}</p>
+            <p class="card-hex" onclick="cpHex(${id},this)">${r.hex.toUpperCase()}</p>
+            <span class="card-tag" style="background:${r.tagBg};color:${r.tagText};">${r.label}</span>
+            ${defineSection}
+          </div>
+          <div class="card-actions">
+            <button class="copy-btn" onclick="cp(${id},this)">${r.hex.toUpperCase()}</button>
+            <button class="remove-btn" onclick="removeItem(${id})" title="Remove">×</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function exportJSON(btn) {
+    const data = { colors: {}, customCategories };
+    results.forEach(r => { data.colors[r.word] = { hex: r.hex.toUpperCase(), label: r.label, custom: !!r.isCustom }; });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+    a.download = 'word-colors.json'; a.click();
+    btn.textContent = 'Exported!'; btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = 'Export JSON'; btn.classList.remove('ok'); }, 1800);
+  }
+
+  function exportCSS(btn) {
+    const lines = [':root {'];
+    results.forEach(r => { lines.push(`  --color-${r.word.toLowerCase().replace(/[^a-z0-9]/g,'-')}: ${r.hex.toUpperCase()};   /* ${r.label} */`); });
+    lines.push('}');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/css' }));
+    a.download = 'word-colors.css'; a.click();
+    btn.textContent = 'Exported!'; btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = 'Export CSS'; btn.classList.remove('ok'); }, 1800);
+  }
+
+  loadCustomCategories();
+  renderCustomCats();
+  document.getElementById('inp').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+  render();
+</script>
+</body>
+</html>
